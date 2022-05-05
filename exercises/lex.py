@@ -23,7 +23,7 @@ reserved = {
     'function' : 'FUNCTION',
     'var' : 'VAR',
     'type' : 'TYPE',
-    'import' : 'IMPORT',
+#    'import' : 'IMPORT',
     'primitive' : 'PRIMITIVE',
 }
 
@@ -53,8 +53,9 @@ tokens = [
     'NOT',
     'EQ',
     'INTEGER',
+    'STRING',
     'ID',
-    'COMMENT',
+#    'COMMENT',
 ] + list(reserved.values())
 
 def Lexer():
@@ -74,9 +75,9 @@ def Lexer():
     t_COLON     = r'\:'
     t_DOT       = r'\.'
     t_LT        = r'\<'
-    t_GT        = r'\<'
-    t_LEQ       = r'\<='
-    t_GEQ       = r'\>='
+    t_GT        = r'\>'
+    t_LEQ       = r'\<\='
+    t_GEQ       = r'\>\='
     t_AND       = r'\&'
     t_OR        = r'\|'
     t_NOT       = r'\<\>'
@@ -85,19 +86,18 @@ def Lexer():
      
     def t_INTEGER(t):
         r'\d+'
+        #r'0|[1-9][0-9]*'
         t.value = int(t.value)    
         return t
+
+    def t_STRING(t):
+        r'\"([^\\\"]|(\\.))*\"'
+        return t
      
-    
     def t_ID(t):
         r'[a-zA-Z_][a-zA-Z_0-9]*'
         t.type = reserved.get(t.value,'ID')    # Check for reserved words
         return t
-    
-    
-    def t_COMMENT(t):
-         r'\/\*(\*(?!\/)|[^*])*\*\/'
-         pass # No return value. Token discarded
     
     # Define a rule so we can track line numbers
     def t_newline(t):
@@ -106,6 +106,7 @@ def Lexer():
      
     # A string containing ignored characters (spaces and tabs)
     t_ignore  = ' \t'
+    t_ignore_COMMENT = r'\/\*(\*(?!\/)|[^*])*\*\/'
     
     # Error handling rule
     def t_error(t):
