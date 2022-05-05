@@ -1,7 +1,7 @@
 # ------------------------------------------------------------
 # based on examples from http://www.dabeaz.com/ply/ply.html
 #
-# tokenizer for miniJava 
+# tokenizer for tiger
 # ------------------------------------------------------------
 import ply.lex as lex
  
