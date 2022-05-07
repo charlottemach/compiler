@@ -37,8 +37,8 @@ def Parser():
     def p_exp_typeid(p):
         '''exp : ID LSQPAREN exp RSQPAREN OF exp
                | ID LBRACE idequals RBRACE'''
-        if len(p) == 4:
-            p[0] = Node('typeid',p[1],p[3])
+        if len(p) == 5:
+            p[0] = Node('typeid',[p[1],p[3]])
         else:
             p[0] = Node('typeid',[p[1],p[3],p[6]])
         logging.debug(p[:])
@@ -46,7 +46,7 @@ def Parser():
     def p_idequals(p):
         '''idequals : ID EQ exp
                     | ID EQ exp COMMA idequals'''
-        if len(p) == 3:
+        if len(p) == 4:
             p[0] = Node('id',[p[1],p[3]])
         else:
             p[0] = Node('id',[p[1],p[3],p[5]])
@@ -116,8 +116,8 @@ def Parser():
                | exp OR exp
                | exp NOT exp
                | exp EQ exp '''
-        if len(p) == 2:
-            p[0] = Node(p[2], [p[1]])
+        if len(p) == 3:
+            p[0] = Node(p[1], [p[2]])
         elif p[1] == '(':
             p[0] = Node('()', [p[2]])
         else:
@@ -137,7 +137,7 @@ def Parser():
                | FOR ID ASSIGN exp TO exp DO exp
                | LET decs IN exps END'''
         if p[1] == 'if':
-            if len(p) == 6:
+            if len(p) == 7:
                 p[0] = Node('if_else', [p[2], p[4], p[6]])
             else:
                 p[0] = Node('if', [p[2], p[4]])
