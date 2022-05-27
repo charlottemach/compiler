@@ -20,6 +20,8 @@ precedence = (
     ('left', 'TIMES','DIVIDE'),
     )
 
+start = 'program'
+
 def Parser():
     def p_program(p):
         '''program : exp
@@ -36,9 +38,12 @@ def Parser():
 
     def p_exp_typeid(p):
         '''exp : ID LSQPAREN exp RSQPAREN OF exp
+               | ID LBRACE RBRACE
                | ID LBRACE idequals RBRACE'''
         if len(p) == 5:
             p[0] = Node('typeid',[p[1],p[3]])
+        elif len(p) == 4:
+            p[0] = Node('typeid',[p[1]])
         else:
             p[0] = Node('typeid',[p[1],p[3],p[6]])
         logging.debug(p[:])
@@ -53,15 +58,12 @@ def Parser():
         logging.debug(p[:])
 
     def p_exp_lvalue(p):
-        '''exp : lvalue
-               | lvalue DOT ID LPAREN RPAREN
-               | lvalue DOT ID LPAREN exps RPAREN'''
-        if len(p) == 2:
-            p[0] = p[1]
-        elif len(p) == 6:
-            p[0] = Node('dot',[p[1],p[3]])
-        else:
-            p[0] = Node('dot',[p[1],p[3],p[5]])
+        '''exp : lvalue'''
+        p[0] = p[1]
+
+    def p_exp_assign(p):
+        '''exp : lvalue ASSIGN exp'''
+        p[0] = Node('assign',[p[1],p[3]])
         logging.debug(p[:])
     
     def p_lvalue(p):
@@ -75,10 +77,13 @@ def Parser():
         logging.debug(p[:])
 
     def p_exps(p):
-        '''exps : exp SEMICOLON exps
-                | exp'''
+        '''exps : exp
+                | LPAREN exps RPAREN
+                | exp SEMICOLON exps'''
         if len(p) == 2:
             p[0] = p[1]
+        elif p[1] == '(':
+            p[0] = Node('()', [p[2]])
         else:
             p[0] = Node('exps', [p[1], p[3]])
         logging.debug(p[:])
@@ -93,7 +98,7 @@ def Parser():
         logging.debug(p[:])
 
     def p_explist(p):
-        '''explist : exp COMMA explist
+        '''explist : explist COMMA exp
                    | exp'''
         if len(p) == 2:
             p[0] = p[1]
@@ -103,7 +108,6 @@ def Parser():
 
     def p_exp_binop(p):
         '''exp : MINUS exp
-               | LPAREN exps RPAREN
                | exp PLUS exp
                | exp MINUS exp
                | exp TIMES exp
@@ -118,15 +122,8 @@ def Parser():
                | exp EQ exp '''
         if len(p) == 3:
             p[0] = Node(p[1], [p[2]])
-        elif p[1] == '(':
-            p[0] = Node('()', [p[2]])
         else:
             p[0] = Node(p[2], [p[1],p[3]])
-        logging.debug(p[:])
-
-    def p_exp_assign(p):
-        '''exp : lvalue ASSIGN exp'''
-        p[0] = Node('assign',[p[1],p[3]])
         logging.debug(p[:])
 
     def p_exp_control(p):
@@ -147,11 +144,11 @@ def Parser():
             p[0] = Node('break', [])
         # let and while
         else:
-            p[0] = Node('while', [p[2], p[4]])
+            p[0] = Node(p[1], [p[2], p[4]])
         logging.debug(p[:])
 
     def p_decs(p):
-        '''decs : dec decs
+        '''decs : decs dec
                 | dec'''
         if len(p) == 2:
             p[0] = p[1]
@@ -181,7 +178,7 @@ def Parser():
         logging.debug(p[:])
 
     def p_tyfields(p):
-        '''tyfields : tyfield COMMA tyfields
+        '''tyfields : tyfields COMMA tyfield
                     | tyfield'''
         if len(p) == 4:
             p[0] = Node('tyfields',[p[1],p[3]])
@@ -214,8 +211,8 @@ def Parser():
         logging.debug(p[:])
 
     def p_vardec(p):
-        '''vardec : VAR ID ASSIGN exp
-                  | VAR ID COLON ID ASSIGN exp'''
+        '''vardec : VAR ID COLON ID ASSIGN exp
+                  | VAR ID ASSIGN exp'''
         if len(p)==5:
             p[0] = Node('assign',[p[2],p[4]]);
         else:
