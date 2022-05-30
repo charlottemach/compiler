@@ -8,7 +8,7 @@ import ply.yacc as yacc
 from lex import tokens, Lexer
 from Node import Node
 
-logging.basicConfig(level=logging.DEBUG,format ="[%(lineno)d - %(funcName)s: %(message)s")
+#logging.basicConfig(level=logging.DEBUG,format ="[%(lineno)d - %(funcName)s: %(message)s")
 
 precedence = (
     ('nonassoc','DO','IF','OF'),
@@ -37,15 +37,16 @@ def Parser():
         logging.debug(p[:])
 
     def p_exp_typeid(p):
-        '''exp : ID LSQPAREN exp RSQPAREN OF exp
+        # lvalue instead of ID to avoid recursion issue
+        '''exp : lvalue LSQPAREN exp RSQPAREN OF exp
                | ID LBRACE RBRACE
                | ID LBRACE idequals RBRACE'''
         if len(p) == 5:
-            p[0] = Node('typeid',[p[1],p[3]])
+            p[0] = Node('record',[p[1],p[3]])
         elif len(p) == 4:
-            p[0] = Node('typeid',[p[1]])
+            p[0] = Node('empty_record',[p[1]])
         else:
-            p[0] = Node('typeid',[p[1],p[3],p[6]])
+            p[0] = Node('array',[p[1],p[3],p[6]])
         logging.debug(p[:])
 
     def p_idequals(p):
@@ -60,34 +61,7 @@ def Parser():
     def p_exp_lvalue(p):
         '''exp : lvalue'''
         p[0] = p[1]
-
-    def p_exp_assign(p):
-        '''exp : lvalue ASSIGN exp'''
-        p[0] = Node('assign',[p[1],p[3]])
-        logging.debug(p[:])
     
-    def p_lvalue(p):
-        '''lvalue : ID
-                  | lvalue DOT ID
-                  | lvalue LSQPAREN exp RSQPAREN'''
-        if len(p) == 2:
-            p[0] = Node('id', [p[1]])
-        else:
-            p[0] = Node('id',[p[1],p[3]])
-        logging.debug(p[:])
-
-    def p_exps(p):
-        '''exps : exp
-                | LPAREN exps RPAREN
-                | exp SEMICOLON exps'''
-        if len(p) == 2:
-            p[0] = p[1]
-        elif p[1] == '(':
-            p[0] = Node('()', [p[2]])
-        else:
-            p[0] = Node('exps', [p[1], p[3]])
-        logging.debug(p[:])
-
     def p_exp_call(p):
         '''exp : ID LPAREN RPAREN
                | ID LPAREN explist RPAREN'''
@@ -108,6 +82,7 @@ def Parser():
 
     def p_exp_binop(p):
         '''exp : MINUS exp
+               | LPAREN exps RPAREN
                | exp PLUS exp
                | exp MINUS exp
                | exp TIMES exp
@@ -120,10 +95,17 @@ def Parser():
                | exp OR exp
                | exp NOT exp
                | exp EQ exp '''
-        if len(p) == 3:
+        if p[1] == '(':
+            p[0] = Node('()', [p[2]])
+        elif len(p) == 3:
             p[0] = Node(p[1], [p[2]])
         else:
             p[0] = Node(p[2], [p[1],p[3]])
+        logging.debug(p[:])
+
+    def p_exp_assign(p):
+        '''exp : lvalue ASSIGN exp'''
+        p[0] = Node('lvalue_assign',[p[1],p[3]])
         logging.debug(p[:])
 
     def p_exp_control(p):
@@ -145,6 +127,25 @@ def Parser():
         # let and while
         else:
             p[0] = Node(p[1], [p[2], p[4]])
+        logging.debug(p[:])
+
+    def p_lvalue(p):
+        '''lvalue : ID
+                  | lvalue DOT ID
+                  | lvalue LSQPAREN exp RSQPAREN'''
+        if len(p) == 2:
+            p[0] = Node('id', [p[1]])
+        else:
+            p[0] = Node('id',[p[1],p[3]])
+        logging.debug(p[:])
+
+    def p_exps(p):
+        '''exps : exp SEMICOLON exps
+                | exp'''
+        if len(p) == 2:
+            p[0] = p[1]
+        else:
+            p[0] = Node('exps', [p[1], p[3]])
         logging.debug(p[:])
 
     def p_decs(p):
